@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<conio.h>
+#include<time.h>
 
 char** map;
 int** race;
@@ -10,11 +11,17 @@ int start_row;
 int start_column;
 int current_lap;
 int speed = -1; //Sensor - speed
+int turn_angle;
 
-enum terrain {
+enum terrain { //Sensor - terrain
 	empty,
 	wall,
 	crumb
+};
+
+enum weather { //Sensor - weather
+	wet,
+	dry
 };
 
 //Store map into an array within allocated memory
@@ -67,7 +74,6 @@ void get_map(char* filename) {
 				character = getc(file);
 			}
 
-			//Characters retrieved from map file can be modified and corresponding conversion mechanism below can be updated
 			if (character == 'g') { //Convert endpoint of racetrack as looped path to connect to start point
 				map[i][j] = ' ';
 			} else if ((character == ' ') || (character == '+')){
@@ -100,7 +106,6 @@ void get_race() {
 	//Iterate through the map array
 	for(int i = 0; i < rows; i++) {
 		for (int j = 0; j < columns; j++) {			
-			//Characters retrieved from map file can be modified and corresponding conversion mechanism below can be updated
 			if (map[i][j] == '+') {
 				race[i][j] = wall; //Identify boundaries of the map and place a corresponding integer value into racetrack array
 			} else {
@@ -117,11 +122,11 @@ int turn_direction(int row, int column) {  //Determine left/right turns
 
 	if (up == crumb) { //Identify intersection for turning right
 		if (left == empty) {
-			return 2; //Turn right - This integer value can be replaced with any integer value that is not the same as the opposing integer value in this function
+			return 2; //Turn right
 		}
 	}
 
-	return 1; //Turn Left - This integer value can be replaced with any integer value that is not the same as the opposing integer value in this function
+	return 1; //Turn Left
 }
 
 int corner_track(int row, int column) { //Determine left/right turns by finding intersections in racetrack
@@ -131,7 +136,6 @@ int corner_track(int row, int column) { //Determine left/right turns by finding 
 	int left = race[row][column - 1]; //State of left unit relative current position of vehicle extracted from racetrack array
 	int down = race[row + 1][column]; //State of down unit relative current position of vehicle extracted from racetrack array
 
-	//Modification of identifying corners in the track requires listing all possible states of entering an intersection, then selecting required states of entering an intersection based on the map file then processing correct turn
 	if (((right == crumb) || (right == empty)) && ((down == crumb) || (down == empty)) && (up == wall) && (left == wall)) { //Right direction, Down direction are vacant options at intersection
 		return turn_direction(row, column); //Turn Left, Turn Left
 	} else if (((up == crumb) || (up == empty)) && ((left == crumb) || (left == empty)) && (right == wall) && (down == wall)) {//Up direction, Left direction are vacant options at intersection
@@ -146,26 +150,34 @@ int corner_track(int row, int column) { //Determine left/right turns by finding 
 }
 
 void apply_brakes(int brake) { //Control brakes output
-	if (brake == 1) {  //This integer value can be replaced with any integer value that is not the same as the opposing integer value in this function
+	if (brake == 1) {
 		printf("BRAKE\n"); //Vehicle slows by engaging brakes
-	} else if (brake == 0) { //This integer value can be replaced with any integer value that is not the same as the opposing integer value in this function
+	} else if (brake == 0) {
 		printf("ACCELERATE\n"); //Vehicle increases speed by engaging accelerator
 	} else {
 		printf("Sensor braking/acceleration has failed to read data.\n"); //Brake sensor failure
-		brake = 1; //Apply brakes for emergency stopping - Ensure this integer value is the same as the first integer value compared in this function
+		brake = 1; //Apply brakes for emergency stopping
 		printf("EMERGENCY BRAKE!\n");
 	}
 }
 
 void apply_steering(int steer) { //Control steering output
-	if (steer == 1) { //This integer value can be replaced with any integer value that is not the same as the opposing integer value in this function
+	if (steer == 1) {
 		printf("Turn Left\n"); //Steer vehicle in left direction
-	} else if (steer == 0) { //This integer value can be replaced with any integer value that is not the same as the opposing integer value in this function
+	} else if (steer == 0) {
 		printf("Turn Right\n");  //Steer vehicle in right direction
 	} else {
 		printf("Sensor steering has failed to read data.\n"); //Steer sensor failure
-		apply_brakes(1); //Apply brakes for emergency stopping - Ensure this integer value is the same as the first integer value compared in the apply_brakes function
+		apply_brakes(1); //Apply brakes for emergency stopping
 		printf("EMERGENCY STOP!\n");
+	}
+
+	if (turn_angle == 1) { //Wet weather turning angle conditions
+		printf("Racing line angle at 5 degrees relative to corner\n");
+	} else if (turn_angle == 2) { //Dry weather turning angle conditions
+		printf("Racing line angle at 45 degrees relative to corner\n");
+	} else { //Dry weather (default) turning angle conditions
+		printf("Racing line angle at 45 degrees relative to corner\n");
 	}
 }
 
@@ -181,11 +193,11 @@ int dfs(int row, int column) {
 		if (race[row][column] == crumb) { //Determine known location from racetrack array
 			map[row][column] = '.'; //Display known location as a new symbol in map array
 			
-			if (corner_track(row, column) == 1) { //Identify corner of racetrack - Ensure this integer value is the same as the integer value identifying left turn in the turn_direction function
+			if (corner_track(row, column) == 1) { //Identify corner of racetrack
 		 		map[row][column] = 'o'; //Display position identified as corner with new symbol in map array
 		 		corner_found = 1; //Retain knowledge of finding a corner in racetrack
 		 		steer_left = 1; //Retain knowledge of turning left at this corner in racetrack
-		 	} else if (corner_track(row, column) == 2) { //Identify corner of racetrack - Ensure this integer value is the same as the integer value identifying right turn in the turn_direction function
+		 	} else if (corner_track(row, column) == 2) { //Identify corner of racetrack
 		 		map[row][column] = 'o'; //Display position identified as corner with new symbol in map array
 		 		corner_found = 1; //Retain knowledge of finding a corner in racetrack
 		 		steer_left = 0; //Retain knowledge of turning right at this corner in racetrack	 		
@@ -203,18 +215,18 @@ int dfs(int row, int column) {
 
 			if (corner_found && steer_left) { //Turn left at a corner
 		 		printf("Corner found!\n");
-		 		apply_brakes(1); //Apply brakes - Ensure this integer value is the same as the integer value identifying applying brakes in the apply_brakes function
+		 		apply_brakes(1); //Apply brakes
 		 		apply_steering(steer_left); //Turn steering wheel left
-		 		speed -= 5; //Reduce speed - This integer value can be replaced by any integer
+		 		speed -= 5; //Reduce speed
 		 	} else if (corner_found && !steer_left){ //Turn right at a corner
 		 		printf("Corner found!\n");
-		 		apply_brakes(1); //Apply brakes - Ensure this integer value is the same as the integer value identifying applying brakes in the apply_brakes function
+		 		apply_brakes(1); //Apply brakes
 		 		apply_steering(steer_left); //Turn steering wheel right
-		 		speed -= 5; //Reduce speed - This integer value can be replaced by any integer
+		 		speed -= 5; //Reduce speed
 		 	} else { //Vehicle travelling on straight section of racetrack
-		 		apply_brakes(0); //Apply accelerator - Ensure this integer value is the same as the integer value identifying disengaging brakes in the apply_brakes function
-		 		if (speed <= 100) { //Increase speed (limited to 105km/h) - This integer value can be replaced by any integer
-		 			speed += 5; //This integer value can be replaced by any integer
+		 		apply_brakes(0); //Apply accelerator
+		 		if (speed <= 100) { //Increase speed (limited to 105km/h)
+		 			speed += 5;
 		 		}
 		 	}
 
@@ -222,7 +234,7 @@ int dfs(int row, int column) {
 			//system("cls");
 		} else {
 			printf("EMERGENCY STOP! Sensor terrain has failed to read data.\n");			
-			apply_brakes(1); //Apply brakes - Ensure this integer value is the same as the integer value identifying applying brakes in the apply_brakes function
+			apply_brakes(1); //Apply brakes
 			exit(1);
 		}
 
@@ -253,15 +265,26 @@ int dfs(int row, int column) {
 void reset_vehicle_path() { //Recalculate path upon completing each lap/race
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < columns; j++) {
-			//Characters reset within map array file can be modified by updating corresponding conversion mechanism below
-			if (race[i][j] == crumb) { //Find known travel points of vehicle - update path array comparison		
-				map[i][j] = ' '; //Update character that re-initialises map array
+			if (race[i][j] == crumb) {				
+				map[i][j] = ' ';
 			}
 		}
 	}
 }
 
 void race_laps(int laps) { //Display vehicle progressing through racetrack
+	srand(time(0));
+	int weather_prediction = rand() % 2; //Predict weather	
+	if (weather_prediction == wet) {
+		turn_angle = 1; //Retain knowledge of wet weather in racetrack impact on turn angles
+	} else if (weather_prediction == dry) {
+		turn_angle = 2; //Retain knowledge of dry weather in racetrack impact on turn angles
+	} else {
+		printf("Weather cannot be determined. Assuming weather condition is dry.\n"); //Weather sensor failure
+		weather_prediction = dry; //Weather is assumed to be dry systematically
+		turn_angle = 2; //Retain knowledge of dry weather in racetrack impact on turn angles
+	}
+
 	for (int i = 0; i < laps; i++) { //Calculate path with algorithm during each race
 		current_lap = i + 1;
 		get_race();
@@ -274,7 +297,7 @@ int main() {
 	int laps;
 	speed = 0;
 	get_map("mapFile.txt");	
-	printf("Enter number of laps: \n");	
+	printf("Enter number of laps: ");	
 	scanf("%d", &laps);
 	race_laps(laps);
 	apply_brakes(1); //Apply brakes after completing session
