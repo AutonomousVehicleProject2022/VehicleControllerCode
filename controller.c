@@ -169,7 +169,7 @@ void apply_steering(int steer) { //Control steering output
 	} else {
 		printf("Sensor steering has failed to read data.\n"); //Steer sensor failure
 		apply_brakes(1); //Apply brakes for emergency stopping
-		printf("EMERGENCY STOP!\n");
+		printf("EMERGENCY STOP!\n");		
 	}
 
 	if (turn_angle == 1) { //Wet weather turning angle conditions
@@ -186,6 +186,10 @@ int dfs(int row, int column) {
 	int* current = &race[row][column]; //Current position of vehicle extracted from racetrack array
 	int corner_found = 0; //Determine corners of the racetrack
 	int steer_left = -1; //Determine turn direction from corners of the racetrack (Default: No turn)
+
+	if ((row < 0) || (column < 0)) {
+		printf("Sensor position has failed to read data.\n"); //Vehicle position sensor failure
+	}
 
 	if (*current == empty) { //Current position of the vehicle is within the racetrack coordinates
 		*current = crumb; //Establish current position as a known location
@@ -231,9 +235,9 @@ int dfs(int row, int column) {
 		 	}
 
 		 	printf("Speed %d\n", speed); //Display speed
-			//system("cls");
+			system("cls");
 		} else {
-			printf("EMERGENCY STOP! Sensor terrain has failed to read data.\n");			
+			printf("EMERGENCY STOP! Sensor terrain has failed to read data.\n"); //Terrain sensor failure			
 			apply_brakes(1); //Apply brakes
 			exit(1);
 		}
@@ -296,11 +300,15 @@ void race_laps(int laps) { //Display vehicle progressing through racetrack
 int main() {
 	int laps;
 	speed = 0;
+	if (speed == -1) {
+		printf("Sensor speed has failed to read data.\n"); //Speed sensor failure
+		speed = 0; //Vehicle is assumed to be stationary systematically (Vehicle is at a complete stop)
+	}
 	get_map("mapFile.txt");	
 	printf("Enter number of laps: ");	
 	scanf("%d", &laps);
 	race_laps(laps);
-	apply_brakes(1); //Apply brakes after completing session
+	apply_brakes(1); //Vehicle slows down by engaging brakes after completing session
 	while (speed > 0) { //Reduce speed
 		if (speed < 10) {
 			speed -= 1;
